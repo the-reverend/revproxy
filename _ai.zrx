@@ -1,0 +1,122 @@
+/* REXX _ai.zrx by the reverend (build 37)                                    */
+/*----------------------------------------------------------------------------*/
+/*-                       Copyright (C) 2001 Ron Wilson                      -*/
+/*-                                                                          -*/
+/*- This script is free, and can be modified for your personal use, but you  -*/
+/*- cannot copy or distribute this script or any derivative work based upon  -*/
+/*- this script without the express permission of the author. Your use of    -*/
+/*- this script is governed by the terms of the REV-LICENSE.                 -*/
+/*-                                                                          -*/
+/*- This program is provided to you WITHOUT ANY WARRANTY, even the implied   -*/
+/*- warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the -*/
+/*- REV-LICENSE for more details.                                            -*/
+/*-                                                                          -*/
+/*-                A copy of the REV-LICENSE is available at:                -*/
+/*-            http://thereverend.coastgames.com/rev-license.html            -*/
+/*----------------------------------------------------------------------------*/
+
+call zoctimeout 60
+globals=_setglobals()
+call _rseed
+
+call zocwriteln "dude()"
+call zocwriteln 'dude()'
+
+do FOREVER
+ w=_getwarps()
+ n=random(_dwords(w,";")-1)+1
+ w=_dword(w,n,";")
+ call zocsend "m"||w||"^Mnna1999^M"
+ if w>10 then call zocsend "f1^Mcd"
+ call zocsend "@"
+ if zocwait("Average Interval Lag")=640 then call _error "timeout"
+ call zocdelay 1
+end
+
+exit
+/*** THE REVEREND'S TW LIBRARY FOR ZOC/REXX ***/
+/*    last updated: 15 Apr 2002, 12:33:13     */
+
+/** _beep v.2 **/
+    _beep: procedure expose (globals)
+     fname=arg(1)
+     if fname\="" then if \_fileexists(fname) then fname=""
+     if fname="" then call zocwrite d2c(7)
+     else call zocplaysound fname
+    return
+
+/** _dword v.2 **/
+    _dword: procedure expose (globals)
+    /* _dword(string, index, delimiter) */
+     rslt=translate(word(translate(arg(1),arg(3)||" "," "||arg(3)),arg(2))," "||arg(3),arg(3)||" ")
+    return rslt
+
+/** _dwords v.2 **/
+    _dwords: procedure expose (globals)
+    /* _dwords(string, delimiter) */
+     rslt=words(translate(arg(1),arg(2)||" "," "||arg(2)))
+    return rslt
+
+/** _error v.6 **/
+    _error: procedure expose (globals)
+     if arg(1)="" then msg="<< script error. >>"
+     else msg="<< script error:  "||arg(1)||" >>"
+     if zocgetinfo("CURSOR-X")>0 then call zocwriteln
+     call zocwriteln "^[[1;31m"||msg
+     call zocwriteln "^[[1;33m"||"<< if this is a serious problem, email me at: the.reverend@coastgames.com >> "
+     call zocwriteln "<< ZOC "||zocgetinfo("VERSION")||", OS "||zocgetinfo("OSYS")||", LOC "||zocgetinfo("CONNECTEDTO")||" >>"
+     if arg(2)\="" then call zocwriteln arg(2)
+     call zocwrite "^[[0m"
+     call _beep "error.wav"
+     if reconnect=1 & arg(1)="timeout" then do
+      /* call zocdisconnect */
+      call zocwriteln "<< ATTEMPTING TO RECONNECT >>"
+      call zocdostring "^RUN=_connect.zrx sn="||scriptname
+      exit
+     end /* if */
+     exit
+    return
+
+/** _fileexists v.2 **/
+    _fileexists: procedure expose (globals)
+     if stream(arg(1), "C", "QUERY EXISTS")="" then rslt=0
+     else rslt=1
+    return rslt
+
+/** _getwarps v.5 **/
+    _getwarps: procedure expose (globals)
+     if _s.1="_S.1" then _s.=""
+     sec=arg(1)
+     call zocreceivebuf 1024*3
+     call zocsend "ci"||sec||"^Mq"
+     if zocwait("<Computer deactivated>")=640 then call _error "timeout"
+     if zocwaitmux("Command [", "Citadel command")=640 then call _error "timeout"
+     buff=translate(zocreceivebuf(0),"  ",d2c(10)||d2c(0))
+     if sec="" then do
+      i=pos("What sector do you wish to examine? [",buff)+37
+      j=pos("]",buff,i)
+      if i>0 & j>0 then sec=substr(buff,i,j-i)
+     end /* if */
+     i=pos("warps to sector(s) :",buff)+20
+     j=pos(d2c(13),buff,i)
+     if i>20 & j>0 then rslt=space(translate(substr(buff,i,j-i),"   ","-()"),1,";")
+     else rslt=""
+     if sec\="" & rslt\="" & _s.sec="" then _s.sec=rslt
+    return rslt
+
+/** _rseed v.5 **/
+    _rseed: procedure expose (globals)
+     r=arg(1)
+     if r="" then r=1000
+     if r<2 then r=2
+     if r>86400 then r=86400
+     parse value time("N") with r1 ":" r2 ":" r3
+     rslt=r1*3600+r2*60+r3
+     call random 1, 89999, rslt
+     rslt=rslt//r
+    return rslt
+
+/** _setglobals v.1 **/
+    _setglobals: procedure expose (globals)
+     rslt=space("_g. _s. _p. _d. _v. _f. _m. _q. _path. _dist. _dtomsl. _dfrmsl. _bg. _nwi. _od. _sv. _pv. _bust. _olist1. _olist2. _clvlist1. _clvlist2. globals verbose reconnect scriptname "||arg(1))
+    return rslt

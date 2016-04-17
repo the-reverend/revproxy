@@ -1,0 +1,1 @@
+d:\pp\bin\win32\ppc386 %1 -Ci -Co -Cr -Ct -S2 -Sc -Se10 -Sg -Sh -Ratt -Twin32 -WC
